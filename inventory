@@ -1,0 +1,14 @@
+[dev]
+host01.example.com
+
+[test]
+host02.example.com
+
+[prod]
+servera.example.com
+
+[balancers]
+controlnode.example.com
+
+[webservers:children]
+prod
