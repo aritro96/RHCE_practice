@@ -1,0 +1,6 @@
+---
+- name: Creates the defaults index page on webservers
+  hosts: webservers
+  become: true
+  roles:
+    - apache

@@ -1,0 +1,6 @@
+---
+  - src: http://controlnode.example.com/haproxy.tar
+    name: balancer
+
+  - src: http://controlnode.example.com/phpinfo.tar
+    name: phpinfo
