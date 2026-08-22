@@ -1,0 +1,23 @@
+---
+- name: Install required packages
+  hosts: dev,test,prod
+  become: true
+  tasks:
+    - name: Ensure required packages are installed
+      ansible.builtin.dnf:
+        name:
+          - php
+          - mariadb
+        state: present
+
+    - name: Ensure RPM Development Tools package group is present in dev host group
+      ansible.builtin.dnf:
+        name: "@RPM Development Tools"
+        state: present
+      when: inventory_hostname in groups['dev']
+
+    - name: Update all the packages in the dev host group
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+      when: inventory_hostname in groups['dev']
