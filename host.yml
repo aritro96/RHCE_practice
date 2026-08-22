@@ -1,0 +1,12 @@
+---
+- name: Generate a myhosts file
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Generate the my hosts file in the dev server
+      ansible.builtin.template:
+        src: hosts.j2
+        dest: /etc/myhosts
+        mode: '0644'
+      when: inventory_hostname in groups['dev']
