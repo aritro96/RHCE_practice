@@ -1,0 +1,31 @@
+---
+- name: Create the required repositories
+  hosts: all
+  become: true
+  tasks:
+    - name: Download the GPG-key
+      ansible.builtin.rpm_key:
+        key: http://controlnode.example.com/pub/RPM-GPG-KEY-redhat-release
+        state: present
+
+    - name: Create the Base repository
+      ansible.builtin.yum_repository:
+        file: myrepo
+        name: EX294_BASE
+        description: EX294 base software
+        baseurl: http://controlnode.example.com/pub/BaseOS/
+        gpgkey: http://controlnode.example.com/pub/RPM-GPG-KEY-redhat-release
+        enabled: true
+        gpgcheck: true
+        state: present
+
+    - name: Create the AppStream repository
+      ansible.builtin.yum_repository:
+        file: myrepo
+        name: EX294_STREM
+        description: EX294 stream software
+        baseurl: http://controlnode.example.com/pub/AppStream/
+        gpgkey: http://controlnode.example.com/pub/RPM-GPG-KEY-redhat-release
+        enabled: true
+        gpgcheck: true
+        state: present
