@@ -1,0 +1,9 @@
+- name: Manage timesync with servers
+  hosts: dev,test,prod 
+  vars:
+    timesync_ntp_servers:
+      - hostname: 10.0.0.2
+        iburst: true
+  roles:
+    - redhat.rhel_system_roles.timesync
+
