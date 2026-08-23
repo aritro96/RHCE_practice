@@ -1,0 +1,67 @@
+---
+- name: Playbook for serving web content from a different directory
+  hosts: dev
+  become: true
+  tasks:
+    - name: Create the required group
+      ansible.builtin.group:
+        name: webdev
+        state: present
+
+    - name: Esure httpd and firewalld packages are present
+      ansible.builtin.dnf:
+        name:
+          - httpd
+          - firewalld
+        state: present
+
+    - name: Ensure the required directory exists
+      ansible.builtin.file:
+        path: /webdev
+        state: directory
+        mode: '2775'
+        setype: httpd_sys_content_t
+        
+    - name: Ensure the index.html exists
+      ansible.builtin.copy:
+        content: "Development"
+        dest: /webdev/index.html
+        setype: httpd_sys_content_t
+        mode: '0644'
+        owner: root
+
+    - name: Create the soft-link if it doesn't exist
+      ansible.builtin.file:
+        src: /webdev
+        dest: /var/www/html/webdev
+        state: link
+
+    - name: Ensure httpd and firewalld are started
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - httpd
+        - firewalld
+
+    - name: Ensure httpd is allowed through firewalld
+      ansible.posix.firewalld:
+        service: http
+        state: enabled
+        immediate: true
+        permanent: true
+
+- name: Check if the desired content is returned
+  hosts: dev
+  become: false
+  tasks:
+    - name: Check the content
+      ansible.builtin.uri:
+        url: http://host01.example.com/webdev/
+        return_content: true
+      register: result
+
+    - name: Display the content
+      ansible.builtin.debug:
+        var: result.content
