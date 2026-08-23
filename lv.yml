@@ -1,0 +1,38 @@
+---
+- name: Create LV data if research VG exists
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Check if the research VG exists
+      ansible.builtin.fail:
+        msg: "volume group does not exist"
+      when: ansible_facts['lvm']['vgs']['research'] is not defined
+    
+    - name: Create the data LV
+      block:
+        - name: Create the 1500M LV
+          community.general.lvol:
+            lv: data
+            vg: research
+            size: 1500M
+          register: LV_1500M
+
+      rescue:
+        - name: Display the error message
+          ansible.builtin.debug:
+            msg: "Could not create logical volume of that 1500M "
+
+        - name: Create the 800M LV instead
+          community.general.lvol:
+            lv: data
+            vg: research
+            size: 800M
+          register: LV_800M
+
+      always:
+        - name: Format the data LV with ext4
+          community.general.filesystem:
+            fstype: ext4
+            dev: /dev/research/data
+          when: (LV_1500M is defined and LV_1500M.changed) or (LV_800M is defined and LV_800M.changed)
