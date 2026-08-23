@@ -1,0 +1,87 @@
+---
+- name: Create the required partitions
+  hosts: dev,prod
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Create the partition on /dev/sdb
+      community.general.parted:
+        device: /dev/sdb
+        number: 1
+        fs_type: ext4
+        part_end: 1000MiB
+        state: present
+      register: partition_sdb
+
+    - name: Format the filesystem
+      community.general.filesystem:
+        dev: /dev/sdb1
+        fstype: ext4
+        state: present
+      when: partition_sdb is defined and partition_sdb.changed
+
+    - name: Create the mount point
+      ansible.builtin.file:
+        path: /part
+        state: directory
+        mode: '0755'
+
+    - name: Mount the /dev/sdb
+      ansible.posix.mount:
+        path: /part
+        src: /dev/sdb1
+        fstype: ext4
+        state: mounted
+
+    - name: Create the 2nd partition
+      block:
+        - name: Create the 1500M size if possible on /dev/sdc
+          community.general.parted:
+            device: /dev/sdc
+            fs_type: ext4
+            part_end: 1500MiB
+            number: 1
+            state: present
+          register: partition_sdc
+
+      rescue:
+        - name: Display the error message
+          ansible.builtin.debug:
+            msg: "could not create partition of that size"
+
+        - name: Create the 800M partition instead
+          community.general.parted:
+            device: /dev/sdc
+            fs_type: ext4
+            part_end: 800MiB
+            number: 1
+            state: present
+          register: partition_sdc
+
+      always:
+        - name: Format the filesystem
+          community.general.filesystem:
+            dev: /dev/sdc1
+            fstype: ext4
+            state: present
+          when: partition_sdc is defined and partition_sdc.changed
+
+        - name: Create the filesystem
+          ansible.builtin.file:
+            path: /part1
+            state: directory
+            mode: '0755'
+          when: partition_sdc is defined and partition_sdc.changed
+
+        - name: Mount the filesystem
+          ansible.posix.mount:
+            path: /part1
+            src: /dev/sdc1
+            fstype: ext4
+            state: mounted
+          when: partition_sdc is defined and partition_sdc.changed
+
+    - name: Check if /dev/sdd exists
+      ansible.builtin.fail:
+        msg: "disk does not exists"
+      when: ansible_facts['devices']['sdd'] is not defined
