@@ -1,0 +1,38 @@
+---
+- name: Create the users is respective hosts and groups
+  hosts: dev,test,prod
+  become: true
+  vars_files:
+    - user_list.yml
+    - locker.yml
+  gather_facts: false
+  tasks:
+    - name: Create the devops group in dev and test
+      ansible.builtin.group:
+        name: devops
+        state: present
+      when: inventory_hostname in groups['dev'] or inventory_hostname in groups['test']
+
+    - name: Create the opsmgr group in the prod
+      ansible.builtin.group:
+        name: opsmgr
+        state: present
+      when: inventory_hostname in groups['prod']
+
+    - name: Create the devops users
+      ansible.builtin.user:
+        name: "{{ item.username }}"
+        password: "{{ PW_developer | password_hash('sha512') }}"
+        group: devops
+        state: present
+      when: (inventory_hostname in groups['dev'] or inventory_hostname in groups['test']) and item.type == 'developer'
+      loop: "{{ users }}"
+
+    - name: Create the devops users
+      ansible.builtin.user:
+        name: "{{ item.username }}"
+        password: "{{ PW_manager | password_hash('sha512') }}"
+        state: present
+        group: opsmgr
+      when: inventory_hostname in groups['prod'] and item.type == 'analyst'
+      loop: "{{ users }}"

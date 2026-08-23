@@ -6,6 +6,7 @@ host02.example.com
 
 [prod]
 servera.example.com
+monitoring.example.com
 
 [balancers]
 controlnode.example.com
